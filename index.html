@@ -440,6 +440,7 @@ a{color:inherit}
 <script>
 (() => {
 const HOST = "Olivia";
+const COUNT_START = 15;     // Startwert für „Leute im Netzwerk“; echte Anmeldungen kommen oben drauf
 const ISSUES = [
   { key:"einladung", ground:"#d5d1c7", pc:"#ff3d8b", pt:"#121212", rot:"-1.6deg", short:"Du bist eingeladen",
     snap:{ src:"img/affe-sonne.jpg", cap:"Ich, wenn ich an den 13.11. denke", side:"r", top:"9%", r:"4deg", pos:"50% 60%" },
@@ -817,7 +818,7 @@ function renderInside() {
   if ($("#inside").hidden) return;
   const coming = [...guests.values()].filter(g => g.coming !== false);
   const total = coming.reduce((s, g) => s + 1 + (g.plus || []).length, 0);
-  $("#countBig").textContent = pub ? pub.count : total;
+  $("#countBig").textContent = COUNT_START + (pub ? pub.count : total);
   $("#secGuests").hidden = !me.isOwner;
   renderWall();
 
