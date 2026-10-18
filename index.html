@@ -115,6 +115,12 @@ a{color:inherit}
 .tabs{position:absolute;left:0;right:0;bottom:0;height:27cqh;display:flex;border-top:.5cqw dashed var(--ink)}
 .tabs span{flex:1;border-right:.4cqw dashed var(--ink);writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:2.6cqw;
   display:flex;align-items:center;justify-content:center;text-transform:uppercase;letter-spacing:.04em}
+.tabs span:not(.gone){cursor:pointer;transition:transform .15s ease,background-color .15s ease}
+.tabs span:not(.gone):hover{background:var(--yellow);transform:translateY(-1.2cqh) rotate(-1.5deg)}
+.tabs span.torn{animation:tear .65s cubic-bezier(.5,0,.8,.4) forwards;background:var(--yellow)}
+@keyframes tear{30%{transform:translateY(-3cqh) rotate(-6deg)}100%{transform:translateY(40cqh) rotate(24deg);opacity:0}}
+.p5 .hint-tab{position:absolute;right:5cqw;bottom:29cqh;font-family:var(--mono);font-size:3cqw;text-transform:uppercase;background:var(--ink);color:var(--paper);padding:.6cqh 1.6cqw;transform:rotate(-3deg)}
+.thumb .hint-tab{display:none}
 .tabs span.gone{background:var(--wall);background-image:var(--noise);border-right-style:solid;color:transparent}
 .tabs span:last-child{border-right:0}
 .cover.enter .sheet{animation:paste .5s cubic-bezier(.2,.7,.2,1)}
@@ -450,6 +456,7 @@ function posterBody(i) {
     el("div", { class: "row1" }, el("span", {}, "Gesucht"), el("span", {}, "13.11.26")),
     el("p", { class: "big" }, "Suche:", el("br"), el("span", {}, "Dich.")),
     el("p", { class: "serif" }, "Für eine Party ganz oben, Reeperbahn 127. Bitte Zettel abreißen."),
+    el("div", { class: "hint-tab" }, "↓ Klick einen Zettel"),
     tabs);
 }
 
@@ -526,8 +533,7 @@ function show(i, animate = true) {
   document.documentElement.style.setProperty("--ground", iss.ground);
   const btn = $("#coverBtn");
   btn.replaceChildren(coverNode(iss, cur, true));
-  btn.disabled = cur === N - 1;
-  btn.setAttribute("aria-label", cur === N - 1 ? "Anmeldung" : "Nächstes Plakat");
+  btn.setAttribute("aria-label", cur === N - 1 ? "Zettel abreißen und anmelden" : "Nächstes Plakat");
   btn.style.cursor = cur === N - 1 ? "default" : "pointer";
   const [L, R] = sideFor(cur);
   $("#left").replaceChildren(...L);
@@ -814,7 +820,20 @@ let tt;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 3200); }
 
 /* ---------- events ---------- */
-$("#coverBtn").addEventListener("click", () => { if (cur < N - 1) show(cur + 1); });
+$("#coverBtn").addEventListener("click", e => {
+  if (cur < N - 1) { show(cur + 1); return; }
+  const tabs = [...$("#coverBtn").querySelectorAll(".tabs span:not(.gone)")];
+  const tab = e.target.closest(".tabs span:not(.gone)") || tabs[Math.floor(tabs.length / 2)];
+  if (tab) { tab.classList.add("torn"); setTimeout(() => tab.classList.replace("torn", "gone"), 650); }
+  setTimeout(afterTear, 350);
+});
+function afterTear() {
+  if (canSeeInside() && !editing) { toast("Zettel abgerissen. Ab in den Innenteil!"); openInside(); return; }
+  const name = $("#fName");
+  const target = name || $("#formArea");
+  target?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+  if (name) { name.focus({ preventScroll: true }); toast("Zettel abgerissen. Jetzt nur noch deinen Namen eintragen."); }
+}
 $("#prev").addEventListener("click", () => show(cur - 1));
 $("#next").addEventListener("click", () => show(cur + 1));
 $("#openIndex").addEventListener("click", openIndex);
