@@ -23,7 +23,7 @@ create table if not exists public.guests (
   updated_at timestamptz not null default now()
 );
 alter table public.guests enable row level security;
-create policy "guests: alle lesen" on public.guests for select to authenticated using (true);
+create policy "guests: eigene oder Host lesen" on public.guests for select to authenticated using (id = auth.uid() or public.is_host());
 create policy "guests: eigene anlegen" on public.guests for insert to authenticated with check (id = auth.uid());
 create policy "guests: eigene ändern" on public.guests for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 create policy "guests: eigene oder Host löschen" on public.guests for delete to authenticated using (id = auth.uid() or public.is_host());
@@ -60,3 +60,17 @@ create policy "ideas: eigene oder Host löschen" on public.ideas for delete to a
 
 -- Live-Updates
 alter publication supabase_realtime add table public.guests, public.wishes, public.ideas;
+
+-- Gruppen, Ideen-Autor:innen und Zähler für Gäste (die Gästeliste selbst sieht nur der Host)
+create or replace function public.party_public()
+returns json language sql stable security definer set search_path = public as $$
+  select case when auth.uid() is null then null else json_build_object(
+    'count',   (select coalesce(sum(1 + cardinality(plus)), 0) from public.guests where coming),
+    'members', (select coalesce(json_agg(json_build_object('item', j, 'guest', g.id, 'name', g.name)), '[]'::json)
+                from public.guests g, unnest(g.joined) j),
+    'authors', (select coalesce(json_agg(json_build_object('id', g.id, 'name', g.name)), '[]'::json)
+                from public.guests g where g.id in (select author from public.ideas))
+  ) end;
+$$;
+revoke execute on function public.party_public() from public, anon;
+grant execute on function public.party_public() to authenticated;

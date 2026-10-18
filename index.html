@@ -364,7 +364,7 @@ a{color:inherit}
       </form>
     </section>
 
-    <section aria-labelledby="hGuests">
+    <section aria-labelledby="hGuests" id="secGuests" hidden>
       <div class="sec-head">
         <div><h2 id="hGuests">Wer kommt</h2><p id="guestSum" style="margin-top:8px"></p></div>
         <figure class="snap inline" style="--sr:3deg"><img src="img/kermit.jpg" alt="Kermit nippt am Tee" loading="lazy"><figcaption>Ich, wenn ich die Absagen lese</figcaption></figure>
@@ -422,6 +422,7 @@ let ready = false;          // db answered (or definitely unavailable)
 let dbOk = false;
 const guests = new Map();   // uid -> data
 let wishes = [], ideas = [];
+let pub = null;            // party_public(): count, members, authors
 let spoilers = false;
 let draftPlus = [];
 let editing = false;
@@ -633,7 +634,7 @@ function fillForm(box) {
     el("div", { class: "field" }, el("label", { for: "fName" }, "Dein Name"), name),
     el("div", { class: "field" }, el("span", { class: "label" }, "Begleitung"), plusWrap),
     el("div", { class: "field" }, el("label", { for: "fNote" }, "Notiz"), note,
-      el("p", { class: "hint" }, "Die Gästeliste und Notizen sehen alle Gäste.")),
+      el("p", { class: "hint" }, "Deine Anmeldung und Notiz sehe nur ich. In Gruppen sehen die anderen deinen Namen.")),
     err, el("div", { class: "actions" }, ...btns,
       editing ? el("button", { class: "ghost", type: "button", onclick: () => { editing = false; draftPlus = []; refreshForm(); } }, "Abbrechen") : null));
   f.addEventListener("submit", e => { e.preventDefault(); submit(true); });
@@ -691,8 +692,11 @@ function openInside() {
 }
 
 const safeUrl = u => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : null; } catch { return null; } };
-const nameOf = uid => (guests.get(uid)?.name) || "Jemand";
-const membersOf = key => [...guests.entries()].filter(([, g]) => (g.joined || []).includes(key)).map(([uid]) => uid);
+const nameOf = uid => (guests.get(uid)?.name)
+  || pub?.members.find(m => m.guest === uid)?.name || pub?.authors.find(a => a.id === uid)?.name || "Jemand";
+const membersOf = key => pub
+  ? [...new Set(pub.members.filter(m => m.item === key).map(m => m.guest))]
+  : [...guests.entries()].filter(([, g]) => (g.joined || []).includes(key)).map(([uid]) => uid);
 
 function groupCell(key, isIdeaByMe) {
   const members = membersOf(key);
@@ -753,7 +757,8 @@ function renderInside() {
   if ($("#inside").hidden) return;
   const coming = [...guests.values()].filter(g => g.coming !== false);
   const total = coming.reduce((s, g) => s + 1 + (g.plus || []).length, 0);
-  $("#countBig").textContent = total;
+  $("#countBig").textContent = pub ? pub.count : total;
+  $("#secGuests").hidden = !me.isOwner;
 
   // my card
   const mine = $("#secMine");
@@ -875,14 +880,16 @@ let loading = null, again = false;
 async function loadAll() {
   if (loading) { again = true; return loading; }
   loading = (async () => {
-    const [g, w, i] = await Promise.all([
+    const [g, w, i, p] = await Promise.all([
       sb.from("guests").select("*"),
       sb.from("wishes").select("*").order("created_at"),
-      sb.from("ideas").select("*").order("created_at")]);
+      sb.from("ideas").select("*").order("created_at"),
+      sb.rpc("party_public")]);
     if (g.error || w.error || i.error) { if (!ready) { ready = true; dbOk = false; rerender(); } return; }
     guests.clear();
     for (const r of g.data) guests.set(r.id, { name: r.name, plus: r.plus || [], note: r.note || "", coming: r.coming, joined: r.joined || [] });
     wishes = w.data.map(toItem); ideas = i.data.map(toItem);
+    pub = !p.error && p.data ? p.data : null;
     const first = !ready; ready = true; dbOk = true;
     rerender();
     if (first && start === "wunschliste") openInside();
