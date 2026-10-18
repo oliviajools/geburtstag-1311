@@ -72,7 +72,7 @@ a{color:inherit}
 
 /* poster */
 .cover-btn{background:none;border:0;padding:0;cursor:pointer;display:block}
-.cover{position:relative;height:min(66vh,680px);aspect-ratio:3/4;max-width:100%}
+.cover{--h:min(66vh,680px);position:relative;height:var(--h);width:calc(var(--h) * .75);aspect-ratio:3/4;max-width:100%}
 .under{position:absolute;inset:0;background:var(--c);transform:rotate(var(--r)) translate(var(--x),var(--y));box-shadow:0 1px 0 rgba(0,0,0,.1)}
 .under::after{content:"";position:absolute;inset:0;background-image:var(--noise);mix-blend-mode:multiply}
 .sheet{position:absolute;inset:0;overflow:hidden;container-type:size;background:var(--pc);color:var(--pt);transform:rotate(var(--rot));
@@ -161,6 +161,7 @@ a{color:inherit}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:34px 26px}
 .thumb{background:none;border:0;padding:0;cursor:pointer;text-align:left}
 .thumb .cover{height:auto;width:100%}
+.cover-btn{flex:none;width:max-content}
 .thumb p{margin:14px 0 0;font-family:var(--mono);font-size:.75rem;text-transform:uppercase}
 .thumb p span{display:block;color:var(--muted)}
 
@@ -245,7 +246,7 @@ a{color:inherit}
   .side{max-width:30rem;width:100%}
   .side.left,.side.right{justify-self:center}
   .side.left{order:2}.cover-btn{order:1}.side.right{order:3}
-  .cover{height:auto;width:min(72vw,360px)}
+  .cover{height:calc(min(72vw,360px) * 4 / 3);width:min(72vw,360px)}
   .form,.notice{max-width:none}
   .snap.l{left:-9%}
   .snap.r{right:-9%}
