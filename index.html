@@ -122,6 +122,20 @@ a{color:inherit}
 .side.enter{animation:fade .45s ease}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 
+/* pasted memes */
+.snap{position:absolute;z-index:8;top:var(--st);width:44%;margin:0;background:#f4f1e8;padding:3.5% 3.5% 0;transform:rotate(var(--sr));
+  box-shadow:0 2px 3px rgba(0,0,0,.18),0 16px 26px -16px rgba(0,0,0,.55)}
+.snap::before{content:"";position:absolute;top:-7px;left:30%;width:40%;height:15px;background:rgba(244,240,226,.78);transform:rotate(-3deg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.snap img{display:block;width:100%;aspect-ratio:1;object-fit:cover;filter:contrast(1.08) saturate(.95)}
+.snap figcaption{font-family:var(--mono);font-size:clamp(9px,1.3vh,12px);text-transform:uppercase;line-height:1.25;padding:7px 2px 9px;color:var(--ink);text-align:left}
+.snap.l{left:-16%}
+.snap.r{right:-16%}
+.snap.inline{position:relative;top:auto;left:auto;right:auto;width:150px;flex:none;padding:6px 6px 0;margin:0 8px 6px 0}
+.snap.inline figcaption{font-size:10px}
+.thumb .snap figcaption{display:none}
+.thumb .snap{padding-bottom:3.5%}
+.stage{overflow-x:clip}
+
 /* footer of journal */
 .foot{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:12px;padding-block:8px 20px}
 .year,.issue{font-weight:900;font-stretch:62%;font-variation-settings:"wdth" 62;font-size:clamp(2.4rem,4.4vw,3.6rem);line-height:.85;font-variant-numeric:tabular-nums}
@@ -227,6 +241,9 @@ a{color:inherit}
   .side.left{order:2}.cover-btn{order:1}.side.right{order:3}
   .cover{height:auto;width:min(72vw,360px)}
   .form,.notice{max-width:none}
+  .snap.l{left:-9%}
+  .snap.r{right:-9%}
+  .snap figcaption{font-size:9px}
 }
 @media (max-width:760px){
   .row{grid-template-columns:2rem minmax(0,1fr) auto}
@@ -342,8 +359,8 @@ a{color:inherit}
 
     <section aria-labelledby="hGuests">
       <div class="sec-head">
-        <h2 id="hGuests">Wer kommt</h2>
-        <p id="guestSum"></p>
+        <div><h2 id="hGuests">Wer kommt</h2><p id="guestSum" style="margin-top:8px"></p></div>
+        <figure class="snap inline" style="--sr:3deg"><img src="img/kermit.jpg" alt="Kermit nippt am Tee" loading="lazy"><figcaption>Ich, wenn ich die Absagen lese</figcaption></figure>
       </div>
       <div class="guests" id="guestList"></div>
     </section>
@@ -359,12 +376,16 @@ a{color:inherit}
 const HOST = "Olivia";
 const ISSUES = [
   { key:"einladung", ground:"#d5d1c7", pc:"#ff3d8b", pt:"#121212", rot:"-1.6deg", short:"Du bist eingeladen",
+    snap:{ src:"img/affe-sonne.jpg", cap:"Ich, wenn ich an den 13.11. denke", side:"r", top:"9%", r:"4deg", pos:"50% 60%" },
     under:[["#2b3fd6","3deg","3%","2%"],["#eeeae1","-5deg","-4%","3%"]] },
   { key:"termin", ground:"#cfccc4", pc:"#121212", pt:"#eeeae1", rot:"1.3deg", short:"13.11. ab 19 Uhr",
+    snap:{ src:"img/tubby.jpg", cap:"Ich, an den Aberglauben", side:"l", top:"7%", r:"-5deg", pos:"50% 30%" },
     under:[["#ffe14a","-4deg","-3%","1%"],["#ff3d8b","2deg","4%","-2%"]] },
   { key:"ort", ground:"#d3d4ce", pc:"#2b3fd6", pt:"#eeeae1", rot:"-.8deg", short:"Ganz oben",
+    snap:{ src:"img/affe-handy.jpg", cap:"Du, wie du „ganz oben“ googelst", side:"r", top:"6%", r:"3deg", pos:"45% 55%" },
     under:[["#121212","4deg","3%","3%"],["#ffe14a","-3deg","-5%","-1%"]] },
   { key:"hausordnung", ground:"#d8d2c6", pc:"#ffe14a", pt:"#121212", rot:"1.7deg", short:"Hausordnung",
+    snap:{ src:"img/frosch.jpg", cap:"§ 3 in Aktion", side:"l", top:"34%", r:"-4deg", pos:"40% 50%" },
     under:[["#ff3d8b","-5deg","-4%","2%"],["#eeeae1","3deg","3%","-3%"]] },
   { key:"anmeldung", ground:"#d5d1c7", pc:"#eeeae1", pt:"#121212", rot:"-1.1deg", short:"Reiß dir einen ab",
     under:[["#2b3fd6","-3deg","-3%","3%"],["#121212","4deg","4%","0%"]] }
@@ -432,11 +453,18 @@ function posterBody(i) {
     tabs);
 }
 
+function snapNode(sn, extra = "") {
+  return el("figure", { class: `snap ${sn.side} ${extra}`, style: `--st:${sn.top || "0"};--sr:${sn.r}` },
+    el("img", { src: sn.src, alt: sn.cap, loading: "lazy", style: `object-position:${sn.pos || "50% 50%"}` }),
+    el("figcaption", {}, sn.cap));
+}
+
 function coverNode(iss, i, big) {
   const c = el("div", { class: "cover", style: `--pc:${iss.pc};--pt:${iss.pt};--rot:${iss.rot}` });
   for (const [col, r, x, y] of iss.under) c.append(el("div", { class: "under", style: `--c:${col};--r:${r};--x:${x};--y:${y}` }));
   const sheet = el("div", { class: "sheet" }, posterBody(i));
   c.append(sheet, el("div", { class: "tape" }));
+  if (iss.snap) c.append(snapNode(iss.snap));
   if (i % 2 === 0) c.append(el("div", { class: "tape b" }));
   return c;
 }
