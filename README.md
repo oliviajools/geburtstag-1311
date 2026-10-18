@@ -10,7 +10,7 @@ Statische Seite auf GitHub Pages, Daten in Supabase.
 3. **Authentication → Sign In / Providers**: *Allow anonymous sign-ins* einschalten. E-Mail-Login bleibt an.
 4. **Authentication → URL Configuration**: *Site URL* auf die GitHub-Pages-Adresse setzen
    (z. B. `https://oliviajools.github.io/geburtstag-1311/`) und dieselbe Adresse bei *Redirect URLs* eintragen.
-5. **Project Settings → API**: *Project URL* und *anon public key* in `config.js` eintragen, committen, pushen.
+5. **Project Settings → API**: *Project URL* und *publishable key* in `config.js` eintragen, committen, pushen.
 
 ## Host werden
 

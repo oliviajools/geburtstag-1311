@@ -1,5 +1,5 @@
-// Aus Supabase: Project Settings → API. Der anon key ist öffentlich gedacht, die Rechte regelt schema.sql.
+// Aus Supabase: Project Settings → API Keys. Der publishable key ist öffentlich gedacht, die Rechte regelt schema.sql.
 window.PARTY_CONFIG = {
-  supabaseUrl: "https://DEIN-PROJEKT.supabase.co",
-  supabaseAnonKey: "DEIN-ANON-KEY"
+  supabaseUrl: "https://anaaqrlntpxslvwueubo.supabase.co",
+  supabaseAnonKey: "sb_publishable_tprD8kE9nE-pKoBeDXqVlA_LvI4z6LR"
 };
