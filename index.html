@@ -253,7 +253,7 @@ a{color:inherit}
 
 <div class="journal" id="journal">
   <header class="top wrap">
-    <button class="brand" id="home" type="button"><b>Olivia</b><small>13.11.26 · St. Pauli</small></button>
+    <button class="brand" id="home" type="button"><b>Olivia</b><small>wird 20 · 13.11.26</small></button>
     <nav class="nav" aria-label="Navigation">
       <button type="button" class="hide-s" data-go="1">Termin</button>
       <button type="button" class="hide-s" data-go="2">Ort</button>
@@ -291,7 +291,7 @@ a{color:inherit}
 <div class="inside" id="inside" hidden>
   <div class="inside-top">
     <header class="top wrap" style="max-width:1080px;margin:0 auto">
-      <button class="brand" id="home2" type="button"><b>Olivia</b><small>13.11.26 · St. Pauli</small></button>
+      <button class="brand" id="home2" type="button"><b>Olivia</b><small>wird 20 · 13.11.26</small></button>
       <nav class="nav" aria-label="Navigation innen">
         <button type="button" id="backCovers">Zur Einladung</button>
         <button type="button" class="pill" id="toMine">Meine Anmeldung</button>
@@ -301,9 +301,9 @@ a{color:inherit}
       <div>
         <p class="kicker">Innenteil · Nur für Gäste</p>
         <h1>Wunsch-<br>liste</h1>
-        <p id="insideIntro">Olivia hat aufgeschrieben, worüber sie sich freut. Tut euch zusammen: Bei jedem Wunsch kann eine Gruppe entstehen. Eigene Ideen sind auch willkommen.</p>
+        <p id="insideIntro">Hier steht, worüber ich mich freue. Futter für mein Belohnungssystem. Tut euch zusammen: Bei jedem Wunsch kann eine Gruppe entstehen, wie ein kleines neuronales Netz mit Geschenk. Eigene Ideen sind auch willkommen.</p>
       </div>
-      <div class="stamp-count"><b id="countBig">0</b><span>Gäste bisher</span></div>
+      <div class="stamp-count"><b id="countBig">0</b><span>Leute im Netzwerk</span></div>
     </div>
   </div>
 
@@ -312,7 +312,7 @@ a{color:inherit}
 
     <section aria-labelledby="hWishes">
       <div class="sec-head">
-        <h2 id="hWishes">Olivias Wünsche</h2>
+        <h2 id="hWishes">Meine Wünsche</h2>
         <p id="wishesHint">Klick auf „Mitmachen“, um einer Gruppe beizutreten.</p>
       </div>
       <form class="addform" id="wishForm" hidden autocomplete="off">
@@ -405,8 +405,8 @@ function posterBody(i) {
   if (i === 0) return el("div", { class: "p p1" },
     el("div", { class: "row1" }, el("span", {}, "Geburtstag"), el("span", {}, "Fr 13.11.26")),
     el("p", { class: "big" }, "Du", el("br"), "bist", el("br"), "einge-", el("br"), "laden."),
-    el("div", { class: "sticker" }, "Freitag", el("br"), "der 13.", el("br"), "Pech", el("br"), "gehabt"),
-    el("p", { class: "serif" }, `${HOST} feiert. Du kommst.`), num);
+    el("div", { class: "sticker" }, "Wird 20", el("br"), "Hirn noch", el("br"), "im Aufbau"),
+    el("p", { class: "serif" }, "Ich werde 20. Du kommst."), num);
   if (i === 1) return el("div", { class: "p p2" },
     el("div", { class: "row1" }, el("span", {}, "Termin"), el("span", {}, "St. Pauli")),
     el("div", { class: "stripe" }, "Freitag der 13. · Freitag der 13. · Freitag der 13."),
@@ -445,28 +445,29 @@ function sideFor(i) {
   const L = [], R = [];
   if (i === 0) {
     L.push(el("p", { class: "kicker" }, "Plakat 01 · Einladung"),
-      el("h1", { class: "headline" }, "Du bist eingeladen."),
-      el("p", { class: "lede" }, `${HOST} feiert Geburtstag. Fünf Plakate, alles Wichtige drauf. Beim letzten reißt du dir einen Zettel ab und trägst dich ein. Danach geht die Wunschliste auf.`));
+      el("h1", { class: "headline" }, "Ich werde 20."),
+      el("p", { class: "lede" }, "Mein präfrontaler Kortex ist erst mit Mitte zwanzig fertig verkabelt. Bis dahin wird gefeiert, das ist neurologisch abgesichert. Fünf Plakate, alles Wichtige drauf. Beim letzten reißt du dir einen Zettel ab und trägst dich ein."));
     R.push(el("ul", { class: "facts" },
       el("li", {}, el("span", {}, "Wann"), el("span", {}, "Fr 13.11.2026, ab 19 Uhr")),
       el("li", {}, el("span", {}, "Wo"), el("span", {}, "Reeperbahn 127, ganz oben")),
-      el("li", {}, el("span", {}, "Trinken"), el("span", {}, "Max. Wein")),
+      el("li", {}, el("span", {}, "Alter"), el("span", {}, "20 (Gehirn: Beta-Version)")),
       el("li", {}, el("span", {}, "Weiter"), el("span", {}, "Plakat anklicken oder →"))));
   } else if (i === 1) {
     L.push(el("p", { class: "kicker" }, "Plakat 02 · Termin"),
       el("h1", { class: "headline" }, "Freitag, der 13."),
       el("p", { class: "sub" }, "November 2026, ab 19 Uhr"),
-      el("p", { class: "lede" }, "Aberglaube hat an diesem Abend Hausverbot."));
+      el("p", { class: "lede" }, "Aberglaube hat Hausverbot. Mein Hippocampus hat sich das Datum schon gemerkt. Deiner bitte auch."));
     R.push(el("ul", { class: "facts" },
       el("li", {}, el("span", {}, "Datum"), el("span", {}, "Fr, 13.11.2026")),
       el("li", {}, el("span", {}, "Beginn"), el("span", {}, "ab 19:00 Uhr")),
       el("li", {}, el("span", {}, "Ende"), el("span", {}, "Offen")),
-      el("li", {}, el("span", {}, "Glück"), el("span", {}, "Bringt jede:r selbst mit"))));
+      el("li", {}, el("span", {}, "Glück"), el("span", {}, "Bringt jede:r selbst mit")),
+      el("li", {}, el("span", {}, "Merkhilfe"), el("span", {}, "13 Neuronen, 11 Synapsen"))));
   } else if (i === 2) {
     L.push(el("p", { class: "kicker" }, "Plakat 03 · Ort"),
       el("h1", { class: "headline" }, "Ganz oben."),
       el("p", { class: "sub" }, "Reeperbahn 127, St. Pauli"),
-      el("p", { class: "lede" }, "Unten an der Tür bist du noch nicht da. Hoch, bis es nicht mehr weitergeht."));
+      el("p", { class: "lede" }, "Ganz oben, wie die Großhirnrinde. Unten an der Tür bist du erst beim Hirnstamm. Hoch, bis es nicht mehr weitergeht."));
     R.push(el("ul", { class: "facts" },
       el("li", {}, el("span", {}, "Adresse"), el("span", {}, "Reeperbahn 127")),
       el("li", {}, el("span", {}, "Etage"), el("span", {}, "Ganz oben")),
@@ -475,15 +476,16 @@ function sideFor(i) {
   } else if (i === 3) {
     L.push(el("p", { class: "kicker" }, "Plakat 04 · Hausordnung"),
       el("h1", { class: "headline" }, "Es wird kontrolliert."),
-      el("p", { class: "lede" }, "Die Kontrolle auf dem Plakat ist streng und schreibt alles auf. Bestechlich nur mit Kuchen."));
+      el("p", { class: "lede" }, "Die Kontrolle auf dem Plakat ist streng und schreibt alles auf. Wein ist das Maximum, damit unsere Hippocampi am Samstag noch wissen, wie schön es war. Bestechlich nur mit Kuchen."));
     R.push(el("ol", { class: "rules" },
       el("li", {}, el("b", {}, "§ 1"), "Kein harter Alkohol."),
       el("li", {}, el("b", {}, "§ 2"), "Wein ist das Maximum."),
-      el("li", {}, el("b", {}, "§ 3"), "Rauchen kann jede:r, bis die Birne wegfliegt.")));
+      el("li", {}, el("b", {}, "§ 3"), "Rauchen kann jede:r, bis die Birne wegfliegt."),
+      el("li", {}, el("b", {}, "§ 4"), "Auf Birnen achtgeben. Meine wird noch gebraucht.")));
   } else {
     L.push(el("p", { class: "kicker" }, "Plakat 05 · Anmeldung"),
       el("h1", { class: "headline" }, "Reiß dir einen ab."),
-      el("p", { class: "lede" }, `Name rein, Begleitung dazu, fertig. Danach siehst du ${HOST}s Wunschliste und kannst dich mit anderen zusammentun.`));
+      el("p", { class: "lede" }, "Name rein, Begleitung dazu, fertig. Danach siehst du meine Wunschliste und kannst dich mit anderen vernetzen. Wie Neuronen, nur mit Geschenken."));
     R.push(formArea());
   }
   return [L, R];
@@ -532,10 +534,10 @@ function refreshForm() { const b = $("#formArea"); if (b) fillForm(b); }
 
 function fillForm(box) {
   box.replaceChildren();
-  if (!ready) { box.append(el("p", { class: "hint" }, "Gästeliste wird geladen …")); return; }
+  if (!ready) { box.append(el("p", { class: "hint" }, "Neuronen feuern …")); return; }
   if (!dbOk) {
     box.append(el("div", { class: "notice" }, el("strong", {}, "Anmelden geht gerade nicht"),
-      "Die Gästeliste ist nicht erreichbar. Lade die Seite neu. Wenn es weiter nicht klappt, sag Olivia Bescheid."));
+      "Die Gästeliste ist nicht erreichbar. Lade die Seite neu. Wenn es weiter nicht klappt, sag mir Bescheid."));
     return;
   }
   if (me.isOwner) {
@@ -584,7 +586,7 @@ function fillForm(box) {
     btns.forEach(b => b.disabled = false);
     if (ok) {
       editing = false; draftPlus = [];
-      toast(coming ? "Angemeldet. Willkommen im Innenteil!" : "Absage gespeichert.");
+      toast(coming ? "Angemeldet. Synapse geknüpft!" : "Absage gespeichert.");
       if (coming) openInside(); else refreshForm();
     } else err.textContent = lastErr;
   };
@@ -662,7 +664,7 @@ function groupCell(key, isIdeaByMe) {
   const cell = el("div", { class: "group" });
   if (me.isOwner && !spoilers) {
     cell.append(el("div", { class: "chips" }, el("span", { class: "chip secret" }, "Streng geheim")),
-      el("small", {}, "Augen zu, Geburtstagskind."));
+      el("small", {}, "Augen zu. Dein Gedächtnis soll überrascht werden."));
     return cell;
   }
   if (members.length) {
@@ -684,7 +686,7 @@ async function toggleJoin(key) {
   set.has(key) ? set.delete(key) : set.add(key);
   const data = { ...g, plus: [...(g.plus || [])], joined: [...set], updatedAt: Date.now() };
   const ok = await writeMine(data);
-  if (ok) toast(set.has(key) ? "Du bist in der Gruppe." : "Ausgestiegen.");
+  if (ok) toast(set.has(key) ? "Du bist im Netzwerk. Feuer frei." : "Ausgestiegen.");
 }
 
 function itemRow(item, idx, kind) {
@@ -742,7 +744,7 @@ function renderInside() {
   $("#wishesHint").textContent = me.isOwner ? "Trag ein, was du dir wünschst. Preis und Link sind optional." : "Klick auf „Mitmachen“, um einer Gruppe beizutreten.";
   const wl = $("#wishList");
   wl.replaceChildren(...(wishes.length ? wishes.map((w, i) => itemRow(w, i, "wish"))
-    : [el("div", { class: "empty" }, me.isOwner ? "Noch leer. Trag oben deinen ersten Wunsch ein." : `${HOST} hat noch nichts eingetragen. Schau bald wieder rein.`)]));
+    : [el("div", { class: "empty" }, me.isOwner ? "Noch leer. Trag oben deinen ersten Wunsch ein." : "Hier ist noch nichts. Mein Gehirn denkt noch nach. Schau bald wieder rein.")]));
 
   // ideas
   const hideIdeas = me.isOwner && !spoilers;
