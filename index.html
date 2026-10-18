@@ -616,7 +616,7 @@ function explain(e) {
   return "Speichern hat nicht geklappt. Lade die Seite neu und versuch es nochmal.";
 }
 function run(fn) {
-  const p = chain.then(async () => { const r = await fn(); if (r && r.error) throw r.error; }).then(() => { loadAll(); return true; }, e => { lastErr = explain(e); toast(lastErr); return false; });
+  const p = chain.then(async () => { const r = await fn(); if (r && r.error) throw r.error; }).then(async () => { if (loading) await loading.catch(() => {}); await loadAll(); return true; }, e => { lastErr = explain(e); toast(lastErr); return false; });
   chain = p.then(() => {});
   return p;
 }
