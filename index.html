@@ -438,6 +438,7 @@ a{color:inherit}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
 <script>
+if (!Element.prototype.replaceChildren) Element.prototype.replaceChildren = function (...n) { this.textContent = ""; this.append(...n); };
 (() => {
 const HOST = "Olivia";
 const ISSUES = [
@@ -687,8 +688,10 @@ function fillForm(box) {
     const plus = draftPlus.map(s => s.trim()).filter(Boolean).slice(0, 8);
     const data = { name: nm, plus, note: note.value.trim(), coming, joined: g?.joined ? [...g.joined] : [], updatedAt: Date.now() };
     btns.forEach(b => b.disabled = true);
-    const ok = await writeMine(data);
-    btns.forEach(b => b.disabled = false);
+    let ok = false;
+    try { ok = await withTimeout(writeMine(data), 20000); }
+    catch (e) { console.error(e); lastErr = "Das dauert zu lange. Prüf dein Internet und versuch es nochmal."; }
+    finally { btns.forEach(b => b.disabled = false); }
     if (ok) {
       editing = false; draftPlus = [];
       toast(coming ? "Angemeldet. Synapse geknüpft!" : "Absage gespeichert.");
@@ -721,7 +724,10 @@ function explain(e) {
   return "Speichern hat nicht geklappt. Lade die Seite neu und versuch es nochmal.";
 }
 function run(fn) {
-  const p = chain.then(async () => { const r = await fn(); if (r && r.error) throw r.error; }).then(async () => { if (loading) await loading.catch(() => {}); await loadAll(); return true; }, e => { lastErr = explain(e); toast(lastErr); return false; });
+  const p = chain.then(async () => { const r = await fn(); if (r && r.error) throw r.error; }).then(async () => {
+    try { if (loading) await loading.catch(() => {}); await loadAll(); } catch (e) { console.error(e); }
+    return true;
+  }, e => { lastErr = explain(e); toast(lastErr); return false; });
   chain = p.then(() => {});
   return p;
 }
@@ -1008,12 +1014,15 @@ const startIdx = ISSUES.findIndex(x => x.key === start);
 show(startIdx >= 0 ? startIdx : 0, false);
 
 function rerender() { refreshForm(); renderInside(); }
+function withTimeout(p, ms) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+}
 
 const toItem = r => ({ id: r.id, data: { title: r.title, price: r.price, link: r.link, note: r.note, by: r.author } });
 let loading = null, again = false;
 async function loadAll() {
   if (loading) { again = true; return loading; }
-  loading = (async () => {
+  loading = (async () => { try {
     const [g, w, i, p, wl, wm] = await Promise.all([
       sb.from("guests").select("*"),
       sb.from("wishes").select("*").order("created_at"),
@@ -1031,6 +1040,7 @@ async function loadAll() {
     const first = !ready; ready = true; dbOk = true;
     rerender();
     if (first && start === "wunschliste") openInside();
+  } catch (e) { console.error(e); if (!ready) { ready = true; dbOk = false; rerender(); } }
   })().finally(() => { loading = null; if (again) { again = false; loadAll(); } });
   return loading;
 }
@@ -1041,16 +1051,16 @@ async function loadAll() {
   if (!window.supabase || !cfg.supabaseUrl || !cfg.supabaseAnonKey || /DEIN/.test(cfg.supabaseUrl)) { fail(); return; }
   try {
     sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-    let { data: { session } } = await sb.auth.getSession();
+    let { data: { session } } = await withTimeout(sb.auth.getSession(), 15000);
     if (keepHash) { keepHash = false; show(cur, false); }
     if (!session && !hostMode) {
-      const r = await sb.auth.signInAnonymously();
+      const r = await withTimeout(sb.auth.signInAnonymously(), 15000);
       if (r.error) throw r.error;
       session = r.data.session;
     }
     if (!session) { ready = true; dbOk = true; rerender(); return; }
     me.id = session.user.id;
-    const { data: host } = await sb.rpc("is_host");
+    const { data: host } = await withTimeout(sb.rpc("is_host"), 15000);
     me.isOwner = host === true;
   } catch (e) { console.error(e); fail(); return; }
   await loadAll();
