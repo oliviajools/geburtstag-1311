@@ -627,8 +627,17 @@ function formArea() {
   return box;
 }
 function refreshForm() { const b = $("#formArea"); if (b) fillForm(b); }
+// Nur neu bauen, wenn sich am Formular wirklich etwas ändert. Sonst würde das
+// Neuladen alle 30 s (und bei jeder fremden Anmeldung) Getipptes und den Fokus löschen.
+function formKey() {
+  const g = myGuest();
+  return JSON.stringify([ready, dbOk, me.isOwner, hostMode, editing, g ? [g.name, g.plus, g.note, g.coming] : null]);
+}
 
 function fillForm(box) {
+  const key = formKey();
+  if (box.dataset.key === key) return;
+  box.dataset.key = key;
   box.replaceChildren();
   if (!ready) { box.append(el("p", { class: "hint" }, "Neuronen feuern …")); return; }
   if (!dbOk) {
