@@ -232,6 +232,8 @@ a{color:inherit}
 .guest{padding:12px 0;border-bottom:1px solid var(--rule);min-width:0}
 .guest b{font-weight:900;font-stretch:70%;font-variation-settings:"wdth" 70;text-transform:uppercase;font-size:1.5rem;display:block;line-height:.95;overflow-wrap:anywhere}
 .guest span{font-family:var(--mono);color:var(--muted);font-size:.75rem;overflow-wrap:anywhere}
+.guest-del{margin-top:6px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--mono);font-size:.7rem;text-transform:uppercase;color:var(--muted);text-decoration:underline}
+.guest-del:hover{color:var(--ink)}
 .guest.no b{text-decoration:line-through;text-decoration-thickness:3px;text-decoration-color:var(--pink)}
 .mine{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px 20px;background:var(--yellow);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
 .mine b{font-weight:900;font-stretch:62%;font-variation-settings:"wdth" 62;text-transform:uppercase;font-size:2rem;line-height:.9}
@@ -878,8 +880,18 @@ function renderInside() {
     el("div", { class: "guest" + (g.coming === false ? " no" : "") },
       el("b", {}, (g.name || "Ohne Namen") + (uid === me.id ? " (du)" : "")),
       el("span", {}, g.coming === false ? "Kann nicht" : ((g.plus || []).length ? "+ " + g.plus.join(", ") : "Allein unterwegs")),
-      g.note ? el("span", { style: "display:block;margin-top:2px" }, "„" + g.note + "“") : null))
+      g.note ? el("span", { style: "display:block;margin-top:2px" }, "„" + g.note + "“") : null,
+      uid !== me.id ? el("button", { class: "guest-del", type: "button", onclick: () => removeGuest(uid, g.name || "Ohne Namen") }, "Löschen") : null))
     : [el("div", { class: "empty" }, "Noch niemand angemeldet.")]));
+}
+
+async function removeGuest(uid, name) {
+  const tag = "guest" + uid;
+  if (pendingDelete !== tag) { pendingDelete = tag; toast(`Nochmal auf „Löschen“ tippen, um ${name} aus der Liste zu nehmen.`); setTimeout(() => { if (pendingDelete === tag) pendingDelete = null; }, 4000); return; }
+  pendingDelete = null;
+  let gone = 0;
+  const ok = await run(async () => { const r = await sb.from("guests").delete().eq("id", uid).select("id"); gone = r.data?.length || 0; return r; });
+  if (ok) toast(gone ? `${name} ist raus.` : "Löschen ging nicht. Bist du als Host angemeldet?");
 }
 
 /* ---------- the wall ---------- */
