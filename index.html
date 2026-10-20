@@ -232,6 +232,14 @@ a{color:inherit}
 .guest{padding:12px 0;border-bottom:1px solid var(--rule);min-width:0}
 .guest b{font-weight:900;font-stretch:70%;font-variation-settings:"wdth" 70;text-transform:uppercase;font-size:1.5rem;display:block;line-height:.95;overflow-wrap:anywhere}
 .guest span{font-family:var(--mono);color:var(--muted);font-size:.75rem;overflow-wrap:anywhere}
+.row.taken{opacity:.42}
+.row.taken h3{text-decoration:line-through;text-decoration-thickness:2px}
+.chip.taken-chip{background:var(--ink);color:var(--paper)}
+.buy{margin-top:10px;background:var(--yellow);color:var(--ink);border:1.5px solid var(--ink);padding:6px 11px;cursor:pointer;font-family:var(--mono);font-size:.74rem;text-transform:uppercase;box-shadow:3px 3px 0 var(--ink)}
+.buy:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.buy-state{margin:10px 0 0;font-family:var(--mono);font-size:.74rem;text-transform:uppercase}
+.buy-state button{background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;text-decoration:underline}
+.row.mybuy h3::after{content:" ✓";color:var(--pink)}
 .guest-del{margin-top:6px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--mono);font-size:.7rem;text-transform:uppercase;color:var(--muted);text-decoration:underline}
 .guest-del:hover{color:var(--ink)}
 .guest.no b{text-decoration:line-through;text-decoration-thickness:3px;text-decoration-color:var(--pink)}
@@ -485,6 +493,7 @@ let dbOk = false;
 const guests = new Map();   // uid -> data
 let wishes = [], ideas = [];
 let pub = null;
+let claimed = new Set(), myClaims = new Set();   // „Ich kauf das“
 let wall = null, myWall = new Set(), wallFilter = "";            // party_public(): count, members, authors
 let spoilers = false;
 let draftPlus = [];
@@ -814,11 +823,40 @@ function itemRow(item, idx, kind) {
   if (kind === "idea") meta.append(el("span", {}, "Idee von " + (d.by === me.id ? "dir" : nameOf(d.by))));
   const mayDelete = kind === "wish" ? me.isOwner : (d.by === me.id || me.isOwner);
   if (mayDelete) meta.append(el("button", { type: "button", onclick: () => removeItem(kind, item.id, d.title) }, "Löschen"));
-  return el("article", { class: "row" },
+  const hideClaims = me.isOwner && !spoilers;
+  const mineBuy = kind === "wish" && myClaims.has(item.id);
+  const taken = kind === "wish" && !hideClaims && claimed.has(item.id) && !mineBuy;
+  const buy = kind === "wish" && !hideClaims ? buyCell(item, mineBuy, taken) : null;
+  return el("article", { class: "row" + (taken ? " taken" : "") + (mineBuy ? " mybuy" : "") },
     el("div", { class: "n" }, pad(idx + 1)),
-    el("div", {}, el("h3", {}, d.title || "Ohne Titel"), d.note ? el("p", { class: "note" }, d.note) : null, meta),
+    el("div", {}, el("h3", {}, d.title || "Ohne Titel"), d.note ? el("p", { class: "note" }, d.note) : null, meta, buy),
     el("div", { class: "price" }, d.price ? d.price : "—"),
-    groupCell(key));
+    taken ? el("div", { class: "group" }, el("div", { class: "chips" }, el("span", { class: "chip taken-chip" }, "Vergeben")),
+      el("small", {}, "Das kauft schon jemand.")) : groupCell(key));
+}
+
+function buyCell(item, mine, taken) {
+  if (taken) return null;
+  if (me.isOwner) return claimed.has(item.id) ? el("p", { class: "buy-state" }, "Vergeben") : null;
+  if (!myGuest()) return null;
+  if (mine) return el("p", { class: "buy-state" }, "Du kaufst das · ",
+    el("button", { type: "button", onclick: () => releaseClaim(item.id) }, "Rückgängig"));
+  return el("button", { class: "buy", type: "button", onclick: () => claimWish(item.id, item.data.title) }, "Ich kauf das");
+}
+
+async function claimWish(id, title) {
+  let taken = false;
+  const ok = await run(async () => {
+    const r = await sb.from("claims").insert({ wish: id });
+    if (r.error && r.error.code === "23505") { taken = true; return {}; }
+    return r;
+  });
+  if (!ok) return;
+  toast(taken ? "Zu spät, das hat sich gerade jemand anderes geschnappt." : `„${title}“ ist für dich reserviert. Andere sehen nur „Vergeben“.`);
+}
+async function releaseClaim(id) {
+  const ok = await run(() => sb.rpc("claim_release", { w: id }));
+  if (ok) toast("Wieder freigegeben.");
 }
 
 let pendingDelete = null;
@@ -860,9 +898,11 @@ function renderInside() {
 
   // wishes
   $("#wishForm").hidden = !me.isOwner;
-  $("#wishesHint").textContent = me.isOwner ? "Trag ein, was du dir wünschst. Preis und Link sind optional." : "Klick auf „Mitmachen“, um einer Gruppe beizutreten.";
+  $("#wishesHint").textContent = me.isOwner ? "Trag ein, was du dir wünschst. Preis und Link sind optional." : "Kaufst du allein, klick „Ich kauf das“. Wollt ihr zusammenlegen, klick „Gruppe starten“ oder „Mitmachen“.";
   const wl = $("#wishList");
-  wl.replaceChildren(...(wishes.length ? wishes.map((w, i) => itemRow(w, i, "wish"))
+  const isTaken = w => !(me.isOwner && !spoilers) && claimed.has(w.id) && !myClaims.has(w.id);
+  const sortedWishes = [...wishes].sort((a, b) => isTaken(a) - isTaken(b));
+  wl.replaceChildren(...(wishes.length ? sortedWishes.map((w, i) => itemRow(w, i, "wish"))
     : [el("div", { class: "empty" }, me.isOwner ? "Noch leer. Trag oben deinen ersten Wunsch ein." : "Hier ist noch nichts. Mein Gehirn denkt noch nach. Schau bald wieder rein.")]));
 
   // ideas
@@ -1035,19 +1075,23 @@ let loading = null, again = false;
 async function loadAll() {
   if (loading) { again = true; return loading; }
   loading = (async () => { try {
-    const [g, w, i, p, wl, wm] = await Promise.all([
+    const [g, w, i, p, wl, wm, cl, cm] = await Promise.all([
       sb.from("guests").select("*"),
       sb.from("wishes").select("*").order("created_at"),
       sb.from("ideas").select("*").order("created_at"),
       sb.rpc("party_public"),
       sb.from("wall").select("id,kind,body,created_at").order("created_at", { ascending: false }),
-      sb.rpc("wall_mine")]);
+      sb.rpc("wall_mine"),
+      sb.from("claims").select("wish"),
+      sb.rpc("claims_mine")]);
     if (g.error || w.error || i.error) { if (!ready) { ready = true; dbOk = false; rerender(); } return; }
     guests.clear();
     for (const r of g.data) guests.set(r.id, { name: r.name, plus: r.plus || [], note: r.note || "", coming: r.coming, joined: r.joined || [] });
     wishes = w.data.map(toItem); ideas = i.data.map(toItem);
     pub = !p.error && p.data ? p.data : null;
     wall = wl.error ? null : wl.data;
+    claimed = new Set(cl.error ? [] : cl.data.map(r => r.wish));
+    myClaims = new Set(cm.error ? [] : (cm.data || []).map(x => typeof x === "string" ? x : Object.values(x)[0]));
     myWall = new Set(wm.error ? [] : (wm.data || []).map(x => typeof x === "string" ? x : Object.values(x)[0]));
     const first = !ready; ready = true; dbOk = true;
     rerender();
