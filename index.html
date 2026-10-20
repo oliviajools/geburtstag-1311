@@ -488,6 +488,8 @@ let cur = 0;
 let sb = null, me = { id: null, isOwner: false };
 const hostMode = location.hash === "#host";
 let keepHash = /access_token=|error_description=/.test(location.hash);
+const fromLink = keepHash;
+const linkError = (() => { try { return new URLSearchParams(location.hash.slice(1)).get("error_description"); } catch { return null; } })();
 let ready = false;          // db answered (or definitely unavailable)
 let dbOk = false;
 const guests = new Map();   // uid -> data
@@ -618,7 +620,7 @@ function show(i, animate = true) {
   $("#issueNo").textContent = pad(cur + 1);
   $("#prev").disabled = cur === 0;
   $("#next").disabled = cur === N - 1;
-  if (!keepHash) try { history.replaceState(null, "", "#" + iss.key); } catch (e) {}
+  if (!keepHash && !hostMode) try { history.replaceState(null, "", "#" + iss.key); } catch (e) {}
 }
 
 function buildIndex() {
@@ -1015,7 +1017,7 @@ function addFromForm(form, prefix, coll, extra) {
 
 /* ---------- toast ---------- */
 let tt;
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 3200); }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, Math.max(3200, msg.length * 70)); }
 
 /* ---------- events ---------- */
 $("#coverBtn").addEventListener("click", e => {
@@ -1063,7 +1065,7 @@ addFromForm($("#ideaForm"), "i", "ideas", () => ({ author: me.id }));
 buildIndex();
 const start = location.hash.slice(1);
 const startIdx = ISSUES.findIndex(x => x.key === start);
-show(startIdx >= 0 ? startIdx : 0, false);
+show(hostMode ? N - 1 : (startIdx >= 0 ? startIdx : 0), false);
 
 function rerender() { refreshForm(); renderInside(); }
 function withTimeout(p, ms) {
@@ -1120,6 +1122,13 @@ async function loadAll() {
     me.isOwner = host === true;
   } catch (e) { console.error(e); fail(); return; }
   await loadAll();
+  if (linkError) toast("Login-Link ging nicht: " + linkError + " Fordere unter #host einen neuen an.");
+  else if (fromLink && me.isOwner) { toast("Hallo Geburtstagskind. Du bist als Host drin."); openInside(); }
+  else if (fromLink || (hostMode && me.id)) {
+    const s = (await sb.auth.getSession()).data.session;
+    if (s && !s.user.is_anonymous && !me.isOwner)
+      toast(`Eingeloggt als ${s.user.email}, aber nicht als Host eingetragen. Führ das hosts-SQL für diese Adresse aus.`);
+  }
   sb.channel("party")
     .on("postgres_changes", { event: "*", schema: "public", table: "guests" }, () => loadAll())
     .on("postgres_changes", { event: "*", schema: "public", table: "wishes" }, () => loadAll())
