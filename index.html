@@ -486,7 +486,9 @@ const pad = i => String(i).padStart(2, "0");
 /* ---------- state ---------- */
 let cur = 0;
 let sb = null, me = { id: null, isOwner: false };
+const hostKey = (location.hash.match(/^#host=([\w-]{24,})$/) || [])[1] || null;
 const hostMode = location.hash === "#host";
+if (hostKey) try { history.replaceState(null, "", location.pathname + location.search + "#anmeldung"); } catch (e) {}
 let keepHash = /access_token=|error_description=/.test(location.hash);
 const fromLink = keepHash;
 const linkError = (() => { try { return new URLSearchParams(location.hash.slice(1)).get("error_description"); } catch { return null; } })();
@@ -1118,12 +1120,16 @@ async function loadAll() {
     }
     if (!session) { ready = true; dbOk = true; rerender(); return; }
     me.id = session.user.id;
+    if (hostKey) {
+      const { data: ok } = await withTimeout(sb.rpc("claim_host", { k: hostKey }), 15000);
+      if (ok !== true) toast("Dieser Host-Link ist ungültig.");
+    }
     const { data: host } = await withTimeout(sb.rpc("is_host"), 15000);
     me.isOwner = host === true;
   } catch (e) { console.error(e); fail(); return; }
   await loadAll();
   if (linkError) toast("Login-Link ging nicht: " + linkError + " Fordere unter #host einen neuen an.");
-  else if (fromLink && me.isOwner) { toast("Hallo Geburtstagskind. Du bist als Host drin."); openInside(); }
+  else if ((fromLink || hostKey) && me.isOwner) { toast("Hallo Geburtstagskind. Du bist als Host drin."); openInside(); }
   else if (fromLink || (hostMode && me.id)) {
     const s = (await sb.auth.getSession()).data.session;
     if (s && !s.user.is_anonymous && !me.isOwner)
