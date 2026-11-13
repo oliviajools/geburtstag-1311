@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ABSOLUTE BRAIN CINEMA – Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0a0a;--ink:#f2f2f2;--pink:#ffffff;--cyan:#d9d9d9;--lime:#bdbdbd;--mut:#8a8a8a}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow:hidden}
+  body::before{content:"";position:fixed;inset:0;background:radial-gradient(60% 60% at 50% 40%,#2a2a2a,#050505 80%);z-index:0}
+  body::after{content:"";position:fixed;inset:-50%;z-index:5;pointer-events:none;opacity:.09;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain .5s steps(4) infinite}
+  @keyframes grain{25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-1%,-2%)}}
+  h1,#clock,.tag,button.go{font-family:'Oswald',sans-serif;text-transform:uppercase}
+  .screen{position:fixed;inset:0;z-index:1;display:none}
+  .screen.on{display:flex}
+  /* SETUP */
+  #setup{flex-direction:column;align-items:center;overflow:auto;padding:4vh 4vw}
+  h1{font-size:clamp(2rem,5vw,4rem);margin:.2em 0;letter-spacing:-.02em}
+  h1 span{color:#fff}
+  .sub{color:var(--mut);margin:0 0 2rem}
+  .panel{width:min(1000px,100%);background:#ffffff0a;border:1px solid #ffffff1f;border-radius:18px;padding:1.4rem}
+  label{font-weight:600;display:block;margin:.4rem 0}
+  textarea{width:100%;height:42vh;background:#00000055;color:var(--ink);border:1px solid #ffffff26;border-radius:10px;padding:.8rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.5}
+  .row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-top:1rem}
+  input[type=number]{width:5rem;background:#00000055;color:var(--ink);border:1px solid #ffffff26;border-radius:8px;padding:.5rem;font-size:1rem}
+  button{font-family:inherit;font-weight:700;font-size:1rem;border:0;border-radius:999px;padding:.8rem 1.4rem;cursor:pointer;background:#ffffff1a;color:var(--ink)}
+  button.go{background:#fff;color:#000;letter-spacing:.08em;font-size:1.2rem;padding:1rem 2.2rem}
+  .hint{color:var(--mut);font-size:.88rem;line-height:1.5}
+  /* PLAYER */
+  #play{flex-direction:column;background:#000}
+  #ytwrap{flex:1;position:relative}
+  #yt{position:absolute;inset:0;width:100%;height:100%}
+  .bar{display:flex;gap:.6rem;align-items:center;padding:.5rem 1rem;background:#000000ee;font-size:.9rem;transition:opacity .4s}
+  .bar .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar button{padding:.45rem .9rem;font-size:.85rem}
+  body.idle .bar{opacity:0}
+  #err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:1rem;background:#0a0a0a;text-align:center;padding:2rem}
+  #err a{color:var(--cyan);font-size:1.3rem}
+  /* PAUSE */
+  #pause{flex-direction:row;align-items:center;justify-content:center;text-align:center;padding:3vw}
+  #pause.tk #clock{font-size:clamp(4rem,11vw,10rem)}
+  #pause.tk #fact{display:none}
+  .tag{font-family:'JetBrains Mono',monospace;color:var(--lime);letter-spacing:.3em;text-transform:uppercase;font-size:clamp(.8rem,1.4vw,1.1rem)}
+  #clock{font-size:clamp(5rem,18vw,16rem);font-weight:700;line-height:1;margin:.1em 0;font-variant-numeric:tabular-nums;
+    color:#fff}
+  #next{font-size:clamp(1.1rem,2.6vw,2.2rem);max-width:80vw}
+  #next b{color:var(--cyan)}
+  #fact{margin-top:4vh;margin-bottom:170px;max-width:min(900px,85vw);font-size:clamp(1rem,2vw,1.6rem);line-height:1.4;min-height:4.5em;transition:opacity .6s}
+  #fact::before{content:"Wusstest du? ";font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-weight:700}
+  .prog{position:fixed;left:0;bottom:0;height:6px;background:#fff;transition:width 1s linear}
+  .pctrl{position:fixed;right:1rem;bottom:1.2rem;display:flex;gap:.5rem}
+  .pctrl button{font-size:.8rem;padding:.45rem .9rem}
+  #done{flex-direction:column;align-items:center;justify-content:center;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<section id="setup" class="screen on">
+  <div class="tag">🧠 Olivia wird 20 präsentiert</div>
+  <h1><span>Absolute Brain Cinema</span></h1>
+  <p class="sub">Brain-Dokus in Dauerschleife – dazwischen immer wieder TikToks.</p>
+  <div class="panel">
+    <label for="list">Playlist – eine Zeile pro Video: <code>YouTube-Link oder ID | Titel</code></label>
+    <textarea id="list" spellcheck="false"></textarea>
+    <label for="tiks" style="margin-top:1rem">TikTok-Links für die Pausen (eine pro Zeile, z. B. <code>https://www.tiktok.com/@philippderjunge/video/…</code>)</label>
+    <textarea id="tiks" spellcheck="false" style="height:14vh" placeholder="Links zu einzelnen TikToks hier einfügen – leer lassen, dann zeigt die Pause nur Countdown + QR-Code"></textarea>
+    <div class="row">
+      <label for="pmin" style="margin:0">Pause zwischen Videos:</label>
+      <input id="pmin" type="number" min="0" step="1" value="10"> Minuten
+      <label for="tsec" style="margin:0 0 0 1rem">Pro TikTok max.:</label>
+      <input id="tsec" type="number" min="10" step="5" value="60"> Sek.
+      <label style="margin:0 0 0 1rem"><input id="shuffle" type="checkbox"> zufällige Reihenfolge</label>
+      <span style="flex:1"></span>
+      <button class="go" id="start">▶ Brain Cinema starten</button>
+    </div>
+    <p id="yterr" class="hint" style="display:none;color:#fff;background:#3a0d0d;border:1px solid #ff6b6b;border-radius:10px;padding:.8rem 1rem">
+      <b>YouTube lädt nicht.</b> Das passiert, wenn die Datei in einer Vorschau geöffnet wird (z.&nbsp;B. Handy, Dateien-App, Mail- oder Chat-App) oder kein Internet da ist. Lösung: Datei auf dem <b>Laptop</b> speichern und per Rechtsklick → „Öffnen mit“ → <b>Chrome</b> öffnen. Klappt es dann immer noch nicht: Datei auf app.netlify.com/drop ziehen und den Link öffnen.
+    </p>
+    <p class="hint">
+      Tipp: Vorher einmal auf „Start“ klicken und Ton testen, dann <b>F</b> für Vollbild. Leertaste = Video pausieren, <b>N</b> = nächstes überspringen.<br>
+      Videos, die sich nicht einbetten lassen, werden nach 20 Sekunden automatisch übersprungen. Deine Playlist-Änderungen werden in diesem Browser gespeichert.
+    </p>
+  </div>
+</section>
+
+<!-- PLAYER -->
+<section id="play" class="screen">
+  <div id="ytwrap">
+    <div id="yt"></div>
+    <div id="err">
+      <div class="tag">Video lässt sich hier nicht abspielen</div>
+      <div id="errtitle" style="font-size:1.6rem"></div>
+      <a id="errlink" href="#" target="_blank" rel="noopener">→ Auf YouTube öffnen</a>
+      <div class="hint">Automatisch weiter in <span id="errcount">20</span> s</div>
+      <button id="errskip">Jetzt überspringen</button>
+    </div>
+  </div>
+  <div class="bar">
+    <span class="tag" id="count" style="letter-spacing:.1em"></span>
+    <span class="t" id="title"></span>
+    <button id="bskip">⏭ Nächstes</button>
+    <button id="bpause">☕ Pause jetzt</button>
+    <button id="bfs">⛶ Vollbild</button>
+  </div>
+</section>
+
+<!-- PAUSE -->
+<section id="pause" class="screen"><div id="pleft" style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0">
+  <div class="tag">Intermission · Drinks holen · Social Battery laden</div>
+  <div id="clock">10:00</div>
+  <div id="next"></div>
+  <div id="fact"></div>
+  </div>
+  <div id="tikwrap" style="display:none;height:86vh;aspect-ratio:9/16;max-width:44vw;border-radius:14px;overflow:hidden;background:#111;flex-shrink:0;margin-left:3vw"><iframe id="tik" title="TikTok von @philippderjunge" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" style="width:100%;height:100%;border:0"></iframe></div>
+  <div style="position:fixed;left:2rem;bottom:2rem;display:flex;gap:1.2rem;align-items:center;text-align:left">
+    <div style="width:150px;height:150px;background:#fff;padding:8px;border-radius:8px;box-sizing:border-box"><svg role="img" aria-label="QR-Code zum TikTok-Account @philippderjunge" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33" width="100%" height="100%" class="segno"><path fill="#fff" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#0a0a0a" d="M2 2.5h7m2 0h1m2 0h4m1 0h4m1 0h7m-29 1h1m5 0h1m3 0h1m1 0h4m2 0h1m1 0h1m1 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m4 0h2m4 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m3 0h1m1 0h1m1 0h5m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h4m1 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h3m4 0h1m3 0h1m2 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-19 1h1m1 0h1m1 0h1m1 0h2m1 0h2m-21 1h1m2 0h1m1 0h2m1 0h1m4 0h4m2 0h1m1 0h1m1 0h1m-24 1h2m1 0h3m2 0h1m3 0h2m2 0h3m1 0h1m1 0h1m2 0h1m2 0h1m-25 1h3m1 0h3m2 0h1m4 0h2m1 0h1m3 0h3m-28 1h2m2 0h2m1 0h3m2 0h2m6 0h2m1 0h2m1 0h2m-26 1h1m3 0h1m2 0h2m3 0h1m2 0h1m2 0h3m2 0h1m1 0h2m-29 1h1m2 0h3m1 0h4m8 0h3m1 0h1m-24 1h4m2 0h1m3 0h2m5 0h2m6 0h4m-29 1h6m1 0h1m3 0h1m1 0h1m1 0h3m2 0h1m4 0h1m1 0h1m-28 1h3m3 0h3m2 0h4m2 0h1m2 0h2m1 0h1m3 0h1m-27 1h1m1 0h2m2 0h4m3 0h1m1 0h2m2 0h4m1 0h1m2 0h1m-29 1h1m2 0h1m1 0h2m1 0h2m1 0h1m1 0h1m2 0h1m1 0h1m4 0h1m3 0h2m-24 1h1m2 0h2m1 0h3m1 0h1m1 0h3m7 0h2m-29 1h1m1 0h2m1 0h2m1 0h1m2 0h1m2 0h1m1 0h1m2 0h6m1 0h1m-19 1h2m2 0h2m2 0h1m2 0h2m3 0h1m1 0h3m-29 1h7m2 0h2m1 0h3m5 0h1m1 0h1m1 0h1m2 0h1m-28 1h1m5 0h1m1 0h1m1 0h1m2 0h1m1 0h1m4 0h1m3 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h2m1 0h1m1 0h1m2 0h1m2 0h5m2 0h2m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h2m4 0h2m1 0h1m1 0h4m-28 1h1m1 0h3m1 0h1m2 0h1m1 0h4m1 0h6m2 0h3m1 0h1m-29 1h1m5 0h1m2 0h1m1 0h1m3 0h1m1 0h4m3 0h1m2 0h1m-28 1h7m1 0h4m1 0h1m2 0h2m2 0h1m2 0h2m2 0h1"/></svg></div>
+    <div style="font-family:Oswald,sans-serif;text-transform:uppercase;font-size:1.5rem;line-height:1.2">Zwischendurch: TikToks von<br>@philippderjunge<br><span style="font-family:Inter,sans-serif;text-transform:none;font-size:1rem;color:#a8a8a8">Scannen &amp; folgen</span></div>
+  </div>
+  <div class="prog" id="prog"></div>
+  <div class="pctrl">
+    <button id="padd">+1 min</button>
+    <button id="pnow">▶ Sofort weiter</button>
+  </div>
+</section>
+
+<!-- DONE -->
+<section id="done" class="screen">
+  <div class="tag">🙌 Fin.</div>
+  <h1><span>Absolute Brain Cinema.</span></h1>
+  <p class="sub">Social Battery: 100 %. Danke fürs Mitdenken!</p>
+  <button onclick="location.reload()">Zurück zur Playlist</button>
+</section>
+
+<script>
+const DEFAULT = `https://www.youtube.com/watch?v=RtjfMfVBJ8k | Quarks – Was das Gehirn so besonders macht
+https://www.youtube.com/watch?v=wo_e0EvEZn8 | Kurzgesagt – Why Your Brain Blinds You For 2 Hours Every Day
+https://www.youtube.com/watch?v=WuyPuH9ojCE | TED-Ed – How stress affects your brain
+https://www.youtube.com/watch?v=dqONk48l5vY | TED-Ed – What would happen if you didn't sleep?
+https://www.youtube.com/watch?v=kqMjoXb4eq8 | Quarks – Was macht das Gehirn, wenn wir schlafen und träumen?
+https://www.youtube.com/watch?v=R0JKCYZ8hng | TED-Ed – How playing an instrument benefits your brain
+https://www.youtube.com/watch?v=H6u0VBqNBQ8 | Kurzgesagt – The Origin of Consciousness
+https://www.youtube.com/watch?v=MMmOLN5zBLY | TED-Ed – The benefits of a bilingual brain
+https://www.youtube.com/watch?v=D-pAZsI1ZN0 | Quarks – Mikrobiom: Wie viel von mir bin eigentlich ich?
+https://www.youtube.com/watch?v=xyQY8a-ng6g | TED-Ed – How the food you eat affects your brain
+https://www.youtube.com/watch?v=ck4RGeoHFko | Kurzgesagt – What Is Intelligence? Where Does It Begin?
+https://www.youtube.com/watch?v=yOgAbKJGrTA | TED-Ed – How memories form and how we lose them
+https://www.youtube.com/watch?v=BHY0FxzoKZE | Wendy Suzuki (TED) – The brain-changing benefits of exercise
+https://www.youtube.com/watch?v=n3Xv_g3g-mA | Kurzgesagt – Loneliness
+https://www.youtube.com/watch?v=zafiGBrFkRM | TED-Ed – What is dyslexia?
+https://www.youtube.com/watch?v=FktsFcooIG8 | Daphne Bavelier (TED) – Your brain on video games
+https://www.youtube.com/watch?v=4b33NTAuF5E | Kurzgesagt – Can You Upload Your Mind & Live Forever?
+https://www.youtube.com/watch?v=2W85Dwxx218 | TED-Ed – Why do we dream?
+https://www.youtube.com/watch?v=PB2OegI6wvI | Elizabeth Loftus (TED) – How reliable is your memory?
+https://www.youtube.com/watch?v=UyyjU8fzEYU | Jill Bolte Taylor (TED) – My stroke of insight`;
+
+const DEFAULT_TIKS = `https://www.tiktok.com/@philippderjunge/video/7705794841099177248
+https://www.tiktok.com/@philippderjunge/video/7703584039319506209
+https://www.tiktok.com/@philippderjunge/video/7700943719322684705
+https://www.tiktok.com/@philippderjunge/video/7699469609233042720
+https://www.tiktok.com/@philippderjunge/video/7698364995138112801
+https://www.tiktok.com/@philippderjunge/video/7696876808150453536
+https://www.tiktok.com/@philippderjunge/video/7693549658001476897
+https://www.tiktok.com/@philippderjunge/video/7692019080638795040
+https://www.tiktok.com/@philippderjunge/video/7689410098266983712
+https://www.tiktok.com/@philippderjunge/video/7688703043604434209
+https://www.tiktok.com/@philippderjunge/video/7687967340385848608`;
+
+const FACTS = [
+ "Dein Gehirn macht nur ca. 2 % deines Körpergewichts aus – verbraucht aber rund 20 % deiner Energie.",
+ "Im Gehirn stecken etwa 86 Milliarden Nervenzellen.",
+ "Dein Gehirn läuft mit ungefähr 20 Watt – weniger als eine Glühbirne.",
+ "Das Gehirn selbst hat keine Schmerzrezeptoren. Deshalb sind manche OPs am wachen Patienten möglich.",
+ "Die „Wir nutzen nur 10 % unseres Gehirns“-Geschichte ist ein Mythos – praktisch alle Areale sind aktiv.",
+ "Du blinzelst ca. 15–20 Mal pro Minute – und dein Gehirn blendet die Dunkelphasen einfach aus.",
+ "Du kannst dich nicht selbst kitzeln: Dein Kleinhirn sagt die Berührung voraus und dämpft sie.",
+ "Beim Lesen dieses Satzes sagt dein Gehirn schon das nächste Wort voraus. Predictive Coding!",
+ "Zieht man das Wasser ab, besteht das Gehirn zu rund 60 % aus Fett.",
+ "Signale rasen mit bis zu ca. 120 m/s durch myelinisierte Nervenfasern.",
+ "Im Schlaf spült das glymphatische System Abfallstoffe aus dem Gehirn.",
+ "Taxifahrer:innen in London haben einen vergrößerten hinteren Hippocampus – Training formt das Gehirn.",
+ "Jede Erinnerung wird beim Abrufen neu „gespeichert“ – und dabei leicht verändert.",
+ "Das Gehirn ist erst mit Mitte 20 vollständig ausgereift; der präfrontale Kortex kommt zuletzt.",
+ "Ein Gähnen ist ansteckend – sogar beim Lesen über Gähnen. Na, schon gegähnt?",
+ "Was du als „Jetzt“ erlebst, ist eine Rekonstruktion deines Gehirns von vor ein paar Hundert Millisekunden."
+];
+
+const $ = id => document.getElementById(id);
+const store = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
+$('list').value = store.get('brainList') || DEFAULT;
+$('pmin').value = store.get('brainPause') || 10;
+$('tiks').value = store.get('brainTiks') || DEFAULT_TIKS;
+$('tsec').value = store.get('brainTsec') || 60;
+
+function parse(){
+  return $('list').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const [u,...t] = l.split('|'); const s=u.trim();
+    const m = s.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/) || s.match(/^([\w-]{11})$/);
+    return m ? {id:m[1], title:(t.join('|').trim()||s)} : null;
+  }).filter(Boolean);
+}
+
+let tiks=[], tkIdx=0, tkTimer=null, list=[], idx=0, player=null, apiReady=false, pauseTimer=null, pauseLeft=0, pauseTotal=0, errTimer=null, factTimer=null;
+
+window.onYouTubeIframeAPIReady = () => { apiReady = true; };
+const tag=document.createElement('script'); tag.src='https://www.youtube.com/iframe_api'; document.head.appendChild(tag);
+
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===id)); }
+
+$('start').onclick = () => {
+  if(!(window.YT && YT.Player) && !document.querySelector('script[data-ytretry]')){ const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; s.dataset.ytretry='1'; document.head.appendChild(s); }
+  store.set('brainList', $('list').value); store.set('brainPause', $('pmin').value); store.set('brainTiks', $('tiks').value); store.set('brainTsec', $('tsec').value);
+  tiks = $('tiks').value.split('\n').map(l=>(l.match(/video\/(\d{8,})/)||l.trim().match(/^(\d{8,})$/)||[])[1]).filter(Boolean);
+  list = parse();
+  if(!list.length){ $('list').focus(); return; }
+  if($('shuffle').checked) list.sort(()=>Math.random()-.5);
+  idx = 0;
+  if(!(apiReady || (window.YT && YT.Player))){
+    $('start').textContent='Lade YouTube …';
+    let waited=0;
+    const w=setInterval(()=>{
+      waited+=200;
+      if(apiReady || (window.YT && YT.Player)){ clearInterval(w); apiReady=true; $('start').textContent='▶ Brain Cinema starten'; playCurrent(); }
+      else if(waited>=8000){ clearInterval(w); $('start').textContent='▶ Nochmal versuchen'; $('yterr').style.display='block'; }
+    },200);
+    return;
+  }
+  playCurrent();
+};
+
+function playCurrent(){
+  clearInterval(pauseTimer); clearInterval(errTimer); clearInterval(factTimer);
+  idx = ((idx % list.length) + list.length) % list.length;
+  stopTik();
+  const v = list[idx];
+  show('play'); $('err').style.display='none';
+  $('count').textContent = 'Now Playing';
+  $('title').textContent = v.title;
+  if(!player){
+    player = new YT.Player('yt', {
+      videoId: v.id,
+      playerVars: { autoplay:1, rel:0, modestbranding:1, playsinline:1 },
+      events: {
+        onReady: e => e.target.playVideo(),
+        onStateChange: e => { if(e.data === YT.PlayerState.ENDED) afterVideo(); },
+        onError: () => showError()
+      }
+    });
+  } else {
+    player.loadVideoById(v.id);
+  }
+}
+
+function showError(){
+  const v = list[idx];
+  $('err').style.display='flex';
+  $('errtitle').textContent = v.title;
+  $('errlink').href = 'https://www.youtube.com/watch?v=' + v.id;
+  let n = 20; $('errcount').textContent = n;
+  clearInterval(errTimer);
+  errTimer = setInterval(()=>{ n--; $('errcount').textContent=n; if(n<=0){ clearInterval(errTimer); idx++; playCurrent(); } },1000);
+}
+$('errskip').onclick = () => { clearInterval(errTimer); idx++; playCurrent(); };
+
+function afterVideo(){
+  idx = (idx + 1) % list.length;
+  startPause();
+}
+
+function fmt(s){ return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+function startPause(){
+  try{ player && player.stopVideo(); }catch(e){}
+  if(document.fullscreenElement) {} // bleibt im Vollbild
+  pauseTotal = pauseLeft = Math.max(0, Math.round(parseFloat($('pmin').value||'10')*60));
+  if(pauseTotal === 0){ playCurrent(); return; }
+  show('pause');
+  $('next').innerHTML = `Als Nächstes: <b></b>`;
+  $('next').querySelector('b').textContent = list[idx].title;
+  $('pause').classList.add('tk');
+  $('tikwrap').style.display = 'block';
+  if(tiks.length) playTik(); else { $('tik').src = 'https://www.tiktok.com/embed/@philippderjunge'; }
+  tick();
+  let fi = Math.floor(Math.random()*FACTS.length);
+  const nextFact = () => { $('fact').style.opacity=0; setTimeout(()=>{ $('fact').textContent = FACTS[fi++ % FACTS.length]; $('fact').style.opacity=1; },600); };
+  nextFact(); factTimer = setInterval(nextFact, 20000);
+  pauseTimer = setInterval(()=>{ pauseLeft--; tick(); if(pauseLeft<=0){ playCurrent(); } },1000);
+}
+function playTik(){
+  clearTimeout(tkTimer);
+  const id = tiks[tkIdx % tiks.length]; tkIdx++;
+  $('tik').src = 'https://www.tiktok.com/player/v1/' + id + '?autoplay=1&loop=0&rel=0&music_info=0&description=0&controls=1';
+  tkTimer = setTimeout(playTik, Math.max(10, parseFloat($('tsec').value||'60'))*1000);
+}
+function stopTik(){ clearTimeout(tkTimer); try{ $('tik').src='about:blank'; }catch(e){} }
+window.addEventListener('message', e => {
+  if(!/tiktok\.com$/.test((()=>{try{return new URL(e.origin).hostname}catch(_){return ''}})())) return;
+  let d = e.data; try{ if(typeof d==='string') d=JSON.parse(d); }catch(_){}
+  if(d && d.type==='onStateChange' && d.value===0 && $('pause').classList.contains('on') && tiks.length>1){ playTik(); }
+});
+function tick(){
+  $('clock').textContent = fmt(Math.max(0,pauseLeft));
+  $('prog').style.width = (100*(1 - pauseLeft/pauseTotal)) + '%';
+}
+$('padd').onclick = () => { pauseLeft += 60; pauseTotal += 60; tick(); };
+$('pnow').onclick = () => playCurrent();
+$('bskip').onclick = () => { idx++; playCurrent(); };
+$('bpause').onclick = () => afterVideo();
+function fs(){ const d=document.documentElement; if(!document.fullscreenElement){ d.requestFullscreen && d.requestFullscreen().catch(()=>{}); } else { document.exitFullscreen(); } }
+$('bfs').onclick = fs;
+
+document.addEventListener('keydown', e => {
+  if(e.target.tagName==='TEXTAREA' || e.target.tagName==='INPUT') return;
+  if(e.key==='f'||e.key==='F') fs();
+  if(e.key==='n'||e.key==='N'){ idx++; playCurrent(); }
+  if(e.key===' ' && player && $('play').classList.contains('on')){ e.preventDefault(); const s=player.getPlayerState(); s===1?player.pauseVideo():player.playVideo(); }
+});
+let idleT; document.addEventListener('mousemove', ()=>{ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(()=>document.body.classList.add('idle'),3000); });
+</script>
+</body>
+</html>
